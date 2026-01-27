@@ -1,17 +1,78 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, User } from "lucide-react";
 
 const navItems = [
-  { label: "Para você", href: "#para-voce", hasSubmenu: true },
-  { label: "Para empresas", href: "#empresas", hasSubmenu: true },
-  { label: "Investimentos", href: "#investimentos", hasSubmenu: true },
-  { label: "Cartões", href: "#cartoes", hasSubmenu: true },
-  { label: "Empréstimos", href: "#emprestimos", hasSubmenu: true },
+  { 
+    label: "Para você", 
+    href: "#para-voce",
+    submenu: [
+      { label: "Conta Digital", href: "#servicos" },
+      { label: "Cartão de Crédito", href: "#cartoes" },
+      { label: "Empréstimos", href: "#emprestimos" },
+    ]
+  },
+  { 
+    label: "Para empresas", 
+    href: "#empresas",
+    submenu: [
+      { label: "Conta PJ", href: "#servicos" },
+      { label: "Maquininha", href: "#servicos" },
+      { label: "Capital de Giro", href: "#emprestimos" },
+    ]
+  },
+  { 
+    label: "Investimentos", 
+    href: "#investimentos",
+    submenu: [
+      { label: "Renda Fixa", href: "#servicos" },
+      { label: "Renda Variável", href: "#servicos" },
+      { label: "Fundos", href: "#servicos" },
+    ]
+  },
+  { 
+    label: "Cartões", 
+    href: "#cartoes",
+    submenu: [
+      { label: "Cartão de Crédito", href: "#servicos" },
+      { label: "Cartão de Débito", href: "#servicos" },
+      { label: "Cartão Virtual", href: "#servicos" },
+    ]
+  },
+  { 
+    label: "Empréstimos", 
+    href: "#emprestimos",
+    submenu: [
+      { label: "Empréstimo Pessoal", href: "#emprestimos" },
+      { label: "Consignado", href: "#emprestimos" },
+      { label: "Financiamento", href: "#emprestimos" },
+    ]
+  },
 ];
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const scrollToSection = (href: string) => {
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+    setOpenDropdown(null);
+    setMobileMenuOpen(false);
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
@@ -26,16 +87,31 @@ export function Header() {
           </a>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1" ref={dropdownRef}>
             {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
-              >
-                {item.label}
-                {item.hasSubmenu && <ChevronDown className="w-4 h-4" />}
-              </a>
+              <div key={item.label} className="relative">
+                <button
+                  onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                  className="flex items-center gap-1 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
+                >
+                  {item.label}
+                  <ChevronDown className={`w-4 h-4 transition-transform ${openDropdown === item.label ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {openDropdown === item.label && (
+                  <div className="absolute top-full left-0 mt-2 w-48 bg-background border border-border rounded-xl shadow-lg py-2 z-50 animate-fade-in">
+                    {item.submenu.map((subItem) => (
+                      <button
+                        key={subItem.label}
+                        onClick={() => scrollToSection(subItem.href)}
+                        className="w-full text-left px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      >
+                        {subItem.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
 
@@ -62,14 +138,28 @@ export function Header() {
           <div className="lg:hidden py-4 border-t border-border animate-fade-in">
             <nav className="flex flex-col gap-2">
               {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className="flex items-center justify-between px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
-                >
-                  {item.label}
-                  {item.hasSubmenu && <ChevronDown className="w-5 h-5 text-muted-foreground" />}
-                </a>
+                <div key={item.label}>
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === item.label ? null : item.label)}
+                    className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-foreground hover:bg-muted rounded-lg transition-colors"
+                  >
+                    {item.label}
+                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${openDropdown === item.label ? 'rotate-180' : ''}`} />
+                  </button>
+                  {openDropdown === item.label && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      {item.submenu.map((subItem) => (
+                        <button
+                          key={subItem.label}
+                          onClick={() => scrollToSection(subItem.href)}
+                          className="w-full text-left px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg transition-colors"
+                        >
+                          {subItem.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </nav>
             <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-border">
